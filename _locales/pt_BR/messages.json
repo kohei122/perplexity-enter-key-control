@@ -1,0 +1,50 @@
+{
+  "appName": {
+    "message": "Perplexity Enter Key Control (by marusin)"
+  },
+  "appNameShort": {
+    "message": "Perplexity Enter Key Control"
+  },
+  "appDescription": {
+    "message": "Evita envios acidentais quando voce queria inserir uma quebra de linha no Perplexity."
+  },
+  "enableEnterControl": {
+    "message": "Ativar controle do Enter"
+  },
+  "sendKey": {
+    "message": "Tecla de envio"
+  },
+  "modeShift": {
+    "message": "Shift+Enter"
+  },
+  "modeCtrl": {
+    "message": "Ctrl+Enter"
+  },
+  "modeCmd": {
+    "message": "Cmd+Enter"
+  },
+  "modeCombo": {
+    "message": "Shift+Ctrl+Enter"
+  },
+  "modeShiftCmd": {
+    "message": "Shift+Cmd+Enter"
+  },
+  "modeBoth": {
+    "message": "Shift+Enter / Ctrl+Enter"
+  },
+  "modeBothMac": {
+    "message": "Shift / Ctrl / Cmd + Enter"
+  },
+  "language": {
+    "message": "Idioma"
+  },
+  "languageSetting": {
+    "message": "Idioma"
+  },
+  "versionLabel": {
+    "message": "Versao"
+  },
+  "otherExtensions": {
+    "message": "Ver extensoes do Chrome"
+  }
+}

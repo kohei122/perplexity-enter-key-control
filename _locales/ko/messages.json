@@ -1,0 +1,50 @@
+{
+  "appName": {
+    "message": "Perplexity Enter Key Control (by marusin)"
+  },
+  "appNameShort": {
+    "message": "Perplexity Enter Key Control"
+  },
+  "appDescription": {
+    "message": "Perplexity에서 줄바꿈하려다 실수로 전송되는 것을 방지합니다."
+  },
+  "enableEnterControl": {
+    "message": "Enter 제어 사용"
+  },
+  "sendKey": {
+    "message": "전송 키"
+  },
+  "modeShift": {
+    "message": "Shift+Enter"
+  },
+  "modeCtrl": {
+    "message": "Ctrl+Enter"
+  },
+  "modeCmd": {
+    "message": "Cmd+Enter"
+  },
+  "modeCombo": {
+    "message": "Shift+Ctrl+Enter"
+  },
+  "modeShiftCmd": {
+    "message": "Shift+Cmd+Enter"
+  },
+  "modeBoth": {
+    "message": "Shift+Enter / Ctrl+Enter"
+  },
+  "modeBothMac": {
+    "message": "Shift / Ctrl / Cmd + Enter"
+  },
+  "language": {
+    "message": "언어"
+  },
+  "languageSetting": {
+    "message": "표시 언어"
+  },
+  "versionLabel": {
+    "message": "버전"
+  },
+  "otherExtensions": {
+    "message": "Chrome 확장 프로그램 보기"
+  }
+}

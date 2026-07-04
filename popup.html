@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title id="app-title">Perplexity Enter Key Control</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      width: 220px;
+      margin: 0;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+
+    .section {
+      margin-bottom: 12px;
+    }
+
+    .title {
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 12px 0;
+    }
+
+    .secondary-toggle-wrap {
+      text-align: center;
+      margin-top: -3px;
+      margin-bottom: 0;
+      line-height: 1;
+    }
+
+    .secondary-toggle-wrap.hidden {
+      display: none;
+    }
+
+    .secondary-toggle {
+      border: none;
+      background: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 1px 6px;
+      line-height: 1;
+    }
+
+    .secondary-content {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 0.18s ease, opacity 0.18s ease, margin-top 0.18s ease;
+      margin-top: 0;
+    }
+
+    .secondary-content.open {
+      max-height: 180px;
+      opacity: 1;
+      margin-top: 8px;
+    }
+
+    .language-setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: #444;
+      margin-top: 2px;
+    }
+
+    .language-setting-label {
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    .language-select {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: #444;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 4px;
+      padding: 1px 4px;
+      min-width: 70px;
+    }
+
+    .other-extensions {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #1a73e8;
+      text-decoration: none;
+    }
+
+    .other-extensions:hover {
+      color: #1558b0;
+      text-decoration: underline;
+    }
+
+    .version-row {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #444;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="section title" id="app-header">Perplexity Enter Key Control</div>
+
+  <div class="section">
+    <label>
+      <input type="checkbox" id="toggle">
+      <span id="label-enable-enter-control"></span>
+    </label>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="title" id="title-send-key"></div>
+    <div id="mode-options"></div>
+  </div>
+
+  <hr>
+
+  <div class="secondary-toggle-wrap" id="secondary-toggle-wrap">
+    <button id="secondary-toggle" class="secondary-toggle" type="button" aria-expanded="false" aria-label="Open secondary settings">&#9660;</button>
+  </div>
+
+  <div class="secondary-content" id="secondary-content">
+    <div class="language-setting-row">
+      <span class="language-setting-label" id="language-setting-label"></span>
+      <select id="language-select" class="language-select" aria-label="Language setting">
+        <option value="auto">Auto</option>
+        <option value="en">EN</option>
+        <option value="ja">JA</option>
+        <option value="ko">KO</option>
+        <option value="zh_CN">ZH-CN</option>
+        <option value="zh_TW">ZH-TW</option>
+        <option value="es">ES</option>
+        <option value="pt_BR">PT-BR</option>
+      </select>
+    </div>
+
+    <a class="other-extensions" id="other-extensions-link" href="#"></a>
+
+    <div class="version-row" id="app-version">v</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
