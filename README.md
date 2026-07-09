@@ -52,6 +52,13 @@ This is an unofficial extension. It is not affiliated with, endorsed by, sponsor
 
 ## Changelog
 
+### 1.1.0
+
+- Improved Perplexity send button detection based on the input/composer DOM structure.
+- Improved send shortcut compatibility in multilingual Perplexity UI environments.
+- Reduced the risk of incorrectly detecting attachment, search, model, dictation, menu, feedback, or other unrelated buttons.
+- Removed broad document-level button search from Perplexity send button detection.
+
 ### 1.0.1
 
 - Improved send shortcut compatibility for Perplexity in multilingual UI environments.

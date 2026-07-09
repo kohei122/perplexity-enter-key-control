@@ -11,14 +11,28 @@ const DEFAULT_SETTINGS = {
 };
 const DEV_FORCE_MAC_PLATFORM_KEY = "devForceMacPlatform";
 const COMPOSITION_END_GRACE_MS = 80;
-const INPUT_SELECTOR = '#ask-input[contenteditable="true"][role="textbox"][data-lexical-editor="true"], [contenteditable="true"][role="textbox"][data-lexical-editor="true"]';
+const MAX_COMPOSER_ROOT_DEPTH = 10;
+const INPUT_SELECTOR = [
+  "#ask-input",
+  '[id="ask-input"][role="textbox"]',
+  "textarea",
+  '#ask-input[contenteditable="true"][role="textbox"][data-lexical-editor="true"]',
+  '[data-lexical-editor="true"][role="textbox"]',
+  '[contenteditable="true"][role="textbox"][data-lexical-editor="true"]',
+  '[contenteditable="true"][role="textbox"]',
+  'div[contenteditable="true"]'
+].join(", ");
+const BROAD_COMPOSER_ROOT_TAGS = new Set(["HTML", "BODY", "MAIN"]);
 const SEND_LABEL_PATTERNS = [
   "送信",
   "メッセージを送信",
   "Send",
   "Send message",
   "Submit",
+  "Submit message",
   "Envoyer",
+  "envoyer",
+  "Envoyer le message",
   "Envoyer un message",
   "Enviar",
   "Enviar mensaje",
@@ -28,6 +42,8 @@ const SEND_LABEL_PATTERNS = [
   "Invia",
   "Invia messaggio",
   "Verzenden",
+  "Sturen",
+  "Bericht sturen",
   "Wyślij",
   "Gönder",
   "Kirim",
@@ -39,17 +55,34 @@ const SEND_LABEL_PATTERNS = [
   "전송",
   "发送",
   "发送消息",
+  "提交",
   "傳送",
+  "發送",
   "傳送訊息",
-  "送出"
+  "發送訊息",
+  "提交",
+  "送出",
+  "भेजें",
+  "सबमिट करें",
+  "संदेश भेजें"
 ];
 const SEND_LABEL_LOWERCASE_PATTERNS = [
   "send",
+  "send message",
   "submit",
+  "submit message",
   "envoyer",
+  "envoyer le message",
+  "envoyer un message",
   "enviar",
+  "enviar mensaje",
+  "enviar mensagem",
   "senden",
+  "nachricht senden",
   "invia",
+  "invia messaggio",
+  "sturen",
+  "bericht sturen",
   "verzenden",
   "wyślij",
   "gönder",
@@ -59,30 +92,105 @@ const SEND_LABEL_LOWERCASE_PATTERNS = [
   "надіслати"
 ];
 const EXCLUDED_BUTTON_LABEL_PATTERNS = [
-  "feedback",
-  "comment",
-  "report",
-  "menu",
-  "options",
-  "microphone",
+  "add file",
+  "add files",
+  "adjuntar",
+  "ajouter",
+  "Ajouter des fichiers ou des outils",
+  "anexar",
+  "archivo",
+  "arquivo",
   "attach",
+  "attachment",
+  "audio",
+  "bug",
+  "feedback",
+  "file",
+  "files",
+  "focus",
+  "help",
+  "comment",
+  "computer",
+  "Computer",
+  "dictée",
+  "Dictée",
+  "dictee",
+  "fichiers",
+  "mic",
+  "microphone",
+  "mode",
+  "model",
+  "modèle",
+  "Modèle",
+  "modele",
+  "more",
+  "options",
+  "outils",
+  "record",
+  "recording",
+  "report",
+  "recherche",
+  "Recherche",
+  "search",
   "settings",
+  "sources",
+  "upload",
+  "voice",
+  "web",
+  "menu",
   "history",
+  "アップロード",
+  "ファイル",
   "フィードバック",
   "コメント",
+  "マイク",
+  "メニュー",
+  "モデル",
+  "モード",
+  "設定",
+  "検索",
+  "音声",
+  "録音",
+  "添付",
   "報告",
   "commentaire",
   "commentaires",
   "comentarios",
   "comentário",
   "comentários",
+  "configuración",
+  "configurações",
+  "denunciar",
+  "fontes",
+  "grabar",
+  "gravação",
+  "micrófono",
+  "microfone",
+  "menú",
+  "녹음",
+  "마이크",
+  "검색",
+  "설정",
+  "음성",
   "의견",
   "피드백",
   "댓글",
+  "추가",
+  "출처",
+  "파일",
   "신고",
-  "反馈",
+  "上传",
+  "上傳",
+  "设置",
   "评论",
+  "语音",
+  "麦克风",
+  "反馈",
   "举报",
+  "錄音",
+  "語音",
+  "設定",
+  "麥克風",
   "意見回饋",
   "回饋",
   "評論",
@@ -212,54 +320,155 @@ function resolvePerplexityInputTarget(target) {
   return isPerplexityInput(input) ? input : null;
 }
 
-function isExcludedButtonLabel(label) {
+function labelIncludesAnyPattern(label, patterns) {
   const normalizedLabel = normalizeLabel(label);
-  return EXCLUDED_BUTTON_LABEL_PATTERNS.some((pattern) => label.includes(pattern)) ||
-    EXCLUDED_BUTTON_LABEL_PATTERNS.some((pattern) => normalizedLabel.includes(pattern));
+  return patterns.some((pattern) => label.includes(pattern)) ||
+    patterns.some((pattern) => normalizedLabel.includes(normalizeLabel(pattern)));
 }
 
-function isSendButtonLabel(label) {
-  const normalizedLabel = normalizeLabel(label);
-  return SEND_LABEL_PATTERNS.some((pattern) => label.includes(pattern)) ||
-    SEND_LABEL_LOWERCASE_PATTERNS.some((pattern) => normalizedLabel.includes(pattern));
+function getPerplexityButtonLabel(button) {
+  return [
+    button.getAttribute("aria-label"),
+    button.getAttribute("title"),
+    button.getAttribute("data-testid"),
+    button.getAttribute("data-test-id"),
+    button.getAttribute("name"),
+    button.getAttribute("value"),
+    button.textContent
+  ].filter(Boolean).join(" ");
 }
 
-function collectSendButtons(scope) {
-  if (!(scope instanceof Element)) return [];
+function hasKnownPerplexitySendLabel(button) {
+  return labelIncludesAnyPattern(getPerplexityButtonLabel(button), SEND_LABEL_PATTERNS) ||
+    labelIncludesAnyPattern(getPerplexityButtonLabel(button), SEND_LABEL_LOWERCASE_PATTERNS);
+}
 
-  const buttons = [...scope.querySelectorAll("button")];
-  const sendButtons = [];
-  for (const button of buttons) {
-    if (!(button instanceof HTMLButtonElement)) continue;
-    if (button.disabled || button.getAttribute("aria-disabled") === "true" || !isVisible(button)) continue;
+function isExcludedPerplexityButton(button) {
+  const label = getPerplexityButtonLabel(button);
+  const hasMenuPopup = normalizeLabel(button.getAttribute("aria-haspopup")) === "menu";
+  if (hasMenuPopup && !hasKnownPerplexitySendLabel(button)) return true;
+  return labelIncludesAnyPattern(label, EXCLUDED_BUTTON_LABEL_PATTERNS);
+}
 
-    const label = button.getAttribute("aria-label") || "";
-    if (isExcludedButtonLabel(label)) continue;
-    if (isSendButtonLabel(label)) {
-      sendButtons.push(button);
+function hasStrongPerplexitySendSignal(button) {
+  if (hasKnownPerplexitySendLabel(button)) return true;
+  if (normalizeLabel(button.getAttribute("type")) === "submit") return true;
+
+  const structuralSignal = [
+    button.id,
+    button.className,
+    button.getAttribute("data-testid"),
+    button.getAttribute("data-test-id")
+  ].filter(Boolean).join(" ");
+
+  return /\b(send|submit)\b/i.test(structuralSignal);
+}
+
+function hasPerplexitySendButtonVisualSignal(button, root) {
+  const className = String(button.className || "");
+  const classSignals = [
+    "bg-button-bg",
+    "text-inverse",
+    "aspect-square",
+    "rounded-full"
+  ].filter((classSignal) => className.includes(classSignal)).length;
+
+  if (classSignals < 2) return false;
+  if (typeof button.getBoundingClientRect !== "function") return classSignals >= 3;
+
+  const buttonRect = button.getBoundingClientRect();
+  const isSmallSquareButton =
+    buttonRect.width >= 24 &&
+    buttonRect.width <= 44 &&
+    buttonRect.height >= 24 &&
+    buttonRect.height <= 44 &&
+    Math.abs(buttonRect.width - buttonRect.height) <= 6;
+
+  if (!isSmallSquareButton) return false;
+  if (!(root instanceof HTMLElement) || typeof root.getBoundingClientRect !== "function") return true;
+
+  const rootRect = root.getBoundingClientRect();
+  return rootRect.width <= 0 || buttonRect.right >= rootRect.right - Math.max(72, rootRect.width * 0.2);
+}
+
+function isSelectablePerplexityButton(button) {
+  return button instanceof HTMLButtonElement &&
+    !button.disabled &&
+    button.getAttribute("aria-disabled") !== "true" &&
+    isVisible(button);
+}
+
+function scorePerplexitySendButton(button, root) {
+  if (!isSelectablePerplexityButton(button)) return -1;
+  if (isExcludedPerplexityButton(button) && !hasKnownPerplexitySendLabel(button)) return -1;
+  if (hasStrongPerplexitySendSignal(button)) return 10;
+  if (hasPerplexitySendButtonVisualSignal(button, root)) return 2;
+  return 1;
+}
+
+function collectPerplexitySendButtonCandidates(root) {
+  if (!(root instanceof Element)) return [];
+
+  return [...root.querySelectorAll("button")]
+    .filter((button) => button instanceof HTMLButtonElement)
+    .map((button) => ({ button, score: scorePerplexitySendButton(button, root) }))
+    .filter((candidate) => candidate.score > 0);
+}
+
+function findSendButtonBySingleRemainingPerplexityCandidate(candidates) {
+  const selectableCandidates = candidates.filter((candidate) => candidate.score > 0);
+  const strongCandidates = selectableCandidates.filter((candidate) => candidate.score >= 10);
+  if (strongCandidates.length === 1) return strongCandidates[0].button;
+  if (strongCandidates.length > 1) return null;
+  return selectableCandidates.length === 1 ? selectableCandidates[0].button : null;
+}
+
+function isBroadPerplexityComposerRoot(element) {
+  return BROAD_COMPOSER_ROOT_TAGS.has(element.tagName);
+}
+
+function isPreferredPerplexityComposerRoot(element) {
+  return element.getAttribute("data-ask-input-container") === "true";
+}
+
+function getPerplexityComposerRootCandidates(inputTarget) {
+  const preferredRoots = [];
+  const roots = [];
+  let node = inputTarget.parentElement;
+  let depth = 0;
+
+  while (node instanceof HTMLElement && depth < MAX_COMPOSER_ROOT_DEPTH) {
+    if (isBroadPerplexityComposerRoot(node)) break;
+    if (node.contains(inputTarget) && node.querySelector("button")) {
+      if (isPreferredPerplexityComposerRoot(node)) {
+        preferredRoots.push(node);
+      } else {
+        roots.push(node);
+      }
     }
+    node = node.parentElement;
+    depth += 1;
   }
 
-  return sendButtons;
+  return [...preferredRoots, ...roots];
 }
 
-function findSendButton(scope) {
-  const sendButtons = collectSendButtons(scope);
-  return sendButtons.length === 1 ? sendButtons[0] : null;
+function findPerplexityComposerRoot(inputTarget) {
+  return getPerplexityComposerRootCandidates(inputTarget)[0] || null;
 }
 
 function resolvePerplexitySendButton(inputTarget) {
   if (!(inputTarget instanceof HTMLElement)) return null;
 
-  let node = inputTarget.parentElement;
-  while (node instanceof HTMLElement && node !== document.body) {
-    const button = findSendButton(node);
+  const roots = getPerplexityComposerRootCandidates(inputTarget);
+  for (const root of roots) {
+    const button = findSendButtonBySingleRemainingPerplexityCandidate(
+      collectPerplexitySendButtonCandidates(root)
+    );
     if (button) return button;
-    node = node.parentElement;
   }
 
-  const fallback = findSendButton(document);
-  return fallback instanceof HTMLButtonElement ? fallback : null;
+  return null;
 }
 function createSyntheticShiftEnterEvent(type) {
   const event = new KeyboardEvent(type, {
