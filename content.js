@@ -12,15 +12,82 @@ const DEFAULT_SETTINGS = {
 const DEV_FORCE_MAC_PLATFORM_KEY = "devForceMacPlatform";
 const COMPOSITION_END_GRACE_MS = 80;
 const INPUT_SELECTOR = '#ask-input[contenteditable="true"][role="textbox"][data-lexical-editor="true"], [contenteditable="true"][role="textbox"][data-lexical-editor="true"]';
-const SEND_LABELS = new Set([
+const SEND_LABEL_PATTERNS = [
+  "送信",
+  "メッセージを送信",
+  "Send",
+  "Send message",
+  "Submit",
+  "Envoyer",
+  "Envoyer un message",
+  "Enviar",
+  "Enviar mensaje",
+  "Enviar mensagem",
+  "Senden",
+  "Nachricht senden",
+  "Invia",
+  "Invia messaggio",
+  "Verzenden",
+  "Wyślij",
+  "Gönder",
+  "Kirim",
+  "Gửi",
+  "Отправить",
+  "Надіслати",
+  "메시지 보내기",
+  "보내기",
+  "전송",
+  "发送",
+  "发送消息",
+  "傳送",
+  "傳送訊息",
+  "送出"
+];
+const SEND_LABEL_LOWERCASE_PATTERNS = [
   "send",
   "submit",
-  "送信",
-  "전송",
-  "傳送",
-  "发送",
-  "enviar"
-]);
+  "envoyer",
+  "enviar",
+  "senden",
+  "invia",
+  "verzenden",
+  "wyślij",
+  "gönder",
+  "kirim",
+  "gửi",
+  "отправить",
+  "надіслати"
+];
+const EXCLUDED_BUTTON_LABEL_PATTERNS = [
+  "feedback",
+  "comment",
+  "report",
+  "menu",
+  "options",
+  "microphone",
+  "attach",
+  "settings",
+  "history",
+  "フィードバック",
+  "コメント",
+  "報告",
+  "commentaire",
+  "commentaires",
+  "comentarios",
+  "comentário",
+  "comentários",
+  "의견",
+  "피드백",
+  "댓글",
+  "신고",
+  "反馈",
+  "评论",
+  "举报",
+  "意見回饋",
+  "回饋",
+  "評論",
+  "檢舉"
+];
 
 let settings = { ...DEFAULT_SETTINGS };
 let settingsLoaded = false;
@@ -145,19 +212,40 @@ function resolvePerplexityInputTarget(target) {
   return isPerplexityInput(input) ? input : null;
 }
 
-function findSendButton(scope) {
-  if (!(scope instanceof Element)) return null;
+function isExcludedButtonLabel(label) {
+  const normalizedLabel = normalizeLabel(label);
+  return EXCLUDED_BUTTON_LABEL_PATTERNS.some((pattern) => label.includes(pattern)) ||
+    EXCLUDED_BUTTON_LABEL_PATTERNS.some((pattern) => normalizedLabel.includes(pattern));
+}
+
+function isSendButtonLabel(label) {
+  const normalizedLabel = normalizeLabel(label);
+  return SEND_LABEL_PATTERNS.some((pattern) => label.includes(pattern)) ||
+    SEND_LABEL_LOWERCASE_PATTERNS.some((pattern) => normalizedLabel.includes(pattern));
+}
+
+function collectSendButtons(scope) {
+  if (!(scope instanceof Element)) return [];
 
   const buttons = [...scope.querySelectorAll("button")];
+  const sendButtons = [];
   for (const button of buttons) {
     if (!(button instanceof HTMLButtonElement)) continue;
-    if (button.disabled || !isVisible(button)) continue;
+    if (button.disabled || button.getAttribute("aria-disabled") === "true" || !isVisible(button)) continue;
 
-    const label = normalizeLabel(button.getAttribute("aria-label"));
-    if (SEND_LABELS.has(label)) return button;
+    const label = button.getAttribute("aria-label") || "";
+    if (isExcludedButtonLabel(label)) continue;
+    if (isSendButtonLabel(label)) {
+      sendButtons.push(button);
+    }
   }
 
-  return null;
+  return sendButtons;
+}
+
+function findSendButton(scope) {
+  const sendButtons = collectSendButtons(scope);
+  return sendButtons.length === 1 ? sendButtons[0] : null;
 }
 
 function resolvePerplexitySendButton(inputTarget) {

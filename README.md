@@ -52,6 +52,12 @@ This is an unofficial extension. It is not affiliated with, endorsed by, sponsor
 
 ## Changelog
 
+### 1.0.1
+
+- Improved send shortcut compatibility for Perplexity in multilingual UI environments.
+- Improved send button detection for localized Perplexity UI labels.
+- Adjusted send button detection to avoid feedback, comment, and report buttons.
+
 ### 1.0.0
 
 - Initial public release
