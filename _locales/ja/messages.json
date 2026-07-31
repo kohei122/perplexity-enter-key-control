@@ -9,7 +9,7 @@
     "message": "Perplexityで改行したい時の誤送信を防ぎます。"
   },
   "enableEnterControl": {
-    "message": "Enter制御を有効にする"
+    "message": "有効化"
   },
   "sendKey": {
     "message": "送信キー"
