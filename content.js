@@ -304,7 +304,10 @@ function normalizeLabel(value) {
 }
 
 function isVisible(element) {
-  return Boolean(element.offsetParent || element.getClientRects().length);
+  const visibility = getComputedStyle(element).visibility;
+  return Boolean(element.offsetParent || element.getClientRects().length) &&
+    visibility !== "hidden" && visibility !== "collapse" &&
+    !element.closest('[hidden], [inert], [aria-hidden="true"]');
 }
 
 function isPerplexityInput(element) {
@@ -346,7 +349,7 @@ function hasKnownPerplexitySendLabel(button) {
 function isExcludedPerplexityButton(button) {
   const label = getPerplexityButtonLabel(button);
   const hasMenuPopup = normalizeLabel(button.getAttribute("aria-haspopup")) === "menu";
-  if (hasMenuPopup && !hasKnownPerplexitySendLabel(button)) return true;
+  if (hasMenuPopup) return true;
   return labelIncludesAnyPattern(label, EXCLUDED_BUTTON_LABEL_PATTERNS);
 }
 
@@ -400,10 +403,10 @@ function isSelectablePerplexityButton(button) {
 
 function scorePerplexitySendButton(button, root) {
   if (!isSelectablePerplexityButton(button)) return -1;
-  if (isExcludedPerplexityButton(button) && !hasKnownPerplexitySendLabel(button)) return -1;
+  if (isExcludedPerplexityButton(button)) return -1;
   if (hasStrongPerplexitySendSignal(button)) return 10;
   if (hasPerplexitySendButtonVisualSignal(button, root)) return 2;
-  return 1;
+  return -1;
 }
 
 function collectPerplexitySendButtonCandidates(root) {
@@ -416,23 +419,29 @@ function collectPerplexitySendButtonCandidates(root) {
 }
 
 function findSendButtonBySingleRemainingPerplexityCandidate(candidates) {
-  const selectableCandidates = candidates.filter((candidate) => candidate.score > 0);
-  const strongCandidates = selectableCandidates.filter((candidate) => candidate.score >= 10);
-  if (strongCandidates.length === 1) return strongCandidates[0].button;
-  if (strongCandidates.length > 1) return null;
-  return selectableCandidates.length === 1 ? selectableCandidates[0].button : null;
+  // Both semantic and existing visual signals qualify, but never an unknown singleton.
+  const identifiedCandidates = candidates.filter((candidate) => candidate.score >= 2);
+  return identifiedCandidates.length === 1 ? identifiedCandidates[0].button : null;
 }
 
 function isBroadPerplexityComposerRoot(element) {
   return BROAD_COMPOSER_ROOT_TAGS.has(element.tagName);
 }
 
-function isPreferredPerplexityComposerRoot(element) {
-  return element.getAttribute("data-ask-input-container") === "true";
+function isUsablePerplexityInput(input) {
+  return isPerplexityInput(input) &&
+    isVisible(input) &&
+    !input.disabled &&
+    !input.readOnly &&
+    input.getAttribute("aria-disabled") !== "true";
+}
+
+function hasUniquePerplexityInput(root, inputTarget) {
+  const inputs = [...root.querySelectorAll(INPUT_SELECTOR)].filter(isUsablePerplexityInput);
+  return inputs.length === 1 && inputs[0] === inputTarget;
 }
 
 function getPerplexityComposerRootCandidates(inputTarget) {
-  const preferredRoots = [];
   const roots = [];
   let node = inputTarget.parentElement;
   let depth = 0;
@@ -440,17 +449,14 @@ function getPerplexityComposerRootCandidates(inputTarget) {
   while (node instanceof HTMLElement && depth < MAX_COMPOSER_ROOT_DEPTH) {
     if (isBroadPerplexityComposerRoot(node)) break;
     if (node.contains(inputTarget) && node.querySelector("button")) {
-      if (isPreferredPerplexityComposerRoot(node)) {
-        preferredRoots.push(node);
-      } else {
-        roots.push(node);
-      }
+      // A local composer must be resolved before a shared outer container.
+      roots.push(node);
     }
     node = node.parentElement;
     depth += 1;
   }
 
-  return [...preferredRoots, ...roots];
+  return roots;
 }
 
 function findPerplexityComposerRoot(inputTarget) {
@@ -458,14 +464,18 @@ function findPerplexityComposerRoot(inputTarget) {
 }
 
 function resolvePerplexitySendButton(inputTarget) {
-  if (!(inputTarget instanceof HTMLElement)) return null;
+  if (!isUsablePerplexityInput(inputTarget)) return null;
+  if (resolvePerplexityInputTarget(document.activeElement) !== inputTarget) return null;
 
   const roots = getPerplexityComposerRootCandidates(inputTarget);
   for (const root of roots) {
-    const button = findSendButtonBySingleRemainingPerplexityCandidate(
-      collectPerplexitySendButtonCandidates(root)
-    );
-    if (button) return button;
+    // Focus alone cannot associate two inputs with a shared send button.
+    if (!hasUniquePerplexityInput(root, inputTarget)) return null;
+    const candidates = collectPerplexitySendButtonCandidates(root);
+    // Do not bypass ambiguous send controls by searching an outer root.
+    if (candidates.length > 0) {
+      return findSendButtonBySingleRemainingPerplexityCandidate(candidates);
+    }
   }
 
   return null;

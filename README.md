@@ -71,3 +71,12 @@ This is an unofficial extension. It is not affiliated with, endorsed by, sponsor
 - Enter inserts a newline in supported Perplexity input boxes
 - Selected shortcut sends the prompt
 - Added popup settings, localization, IME safeguards, and duplicate initialization guards
+
+## Local regression tests
+
+Local Mock DOM tests load the shipping extension in bundled headless Chromium without visiting Perplexity.
+Run `npm ci --ignore-scripts`, `npx playwright install chromium`, then `npm run test:unit` / `npm run test:browser` / `npm run test:all`.
+
+Shortcut sending requires a unique usable input and an identified, unambiguous send button in its focused composer context.
+Shared inputs, unknown single buttons, and feedback controls fail closed; normal Enter and configured shortcuts remain covered.
+See [test coverage, findings, and setup](tests/playwright/README.md).

@@ -1,0 +1,8 @@
+body { min-height: 300px; font-family: sans-serif; margin: 24px; }
+section, .composer { width: 480px; padding: 12px; border: 1px solid #ccc; margin-bottom: 16px; }
+[contenteditable], textarea, input { display: block; min-height: 60px; width: 420px; white-space: pre-wrap; border: 1px solid #999; }
+button { margin: 8px; }
+[hidden] { display: none !important; }
+
+.invisible { visibility: hidden; }
+.visual-candidate { width: 32px; height: 32px; padding: 0; display: block; margin-left: auto; }
